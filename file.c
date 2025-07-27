@@ -321,30 +321,47 @@ void View_patient_record(u8 Mode){
 
 	
 }
-
 void view_reservations(u8 Mode){
-	u8 found = 0;
-	node* current = head;
-	while(current != 0) {
-    if(current->data.slot != 0) {
-        printf("Patient ID:%d \t", current->data.ID);
-        printf("%s \n", slots[current->data.slot - 1]);
-        found = 1;
+    FILE *file = fopen("patients.csv", "r");
+    if(file == NULL){
+        print_colored_text("Error opening file.\n", RED);
+        return;
     }
-    current = current->next;  // Move this outside the if
-}
-	printf("\n");
-	if(!found){
-    print_colored_text("No reservations yet.\n",RED);
-	}
 
-	Sleep(500);
-	if(Mode == ADMIN_MODE){
-	menu_admin();
-	}else{
-	menu_user();}
-	return;
+    char line[100];
+    u8 found = 0;
+
+    
+    fgets(line, sizeof(line), file);
+
+    while(fgets(line, sizeof(line), file)) {
+        int id, age, slot;
+        char name[50], gender;
+        
+      
+        if(sscanf(line, "%d,%49[^,],%d,%c,%d", &id, name, &age, &gender, &slot) == 5) {
+            if(slot != 0){
+                printf("Patient ID: %d\t", id);
+                printf("%s\n", slots[slot - 1]);
+                found = 1;
+            }
+        }
+    }
+
+    fclose(file);
+
+    if(!found){
+        print_colored_text("No reservations yet.\n", RED);
+    }
+
+    Sleep(500);
+    if(Mode == ADMIN_MODE){
+        menu_admin();
+    } else {
+        menu_user();
+    }
 }
+
 
 
 void save_patients_to_file(){
@@ -372,15 +389,21 @@ void load_patients_from_file() {
     }
 
     char line[100];
-    fgets(line, sizeof(line), fp); // skip header line
+    fgets(line, sizeof(line), fp); 
 
     while (fgets(line, sizeof(line), fp)) {
         patient p;
         sscanf(line, "%d,%19[^,],%d,%c,%d", &p.ID, p.name, &p.age, &p.gender, &p.slot);
-        insertAtLast(p); 
+        
+        insertAtLast(p);
+
+        if(p.slot >= 1 && p.slot <= SLOTSNUM){
+            reservedSlots[p.slot - 1] = 1;
+        }
     }
 
     fclose(fp);
 }
+
 
 
